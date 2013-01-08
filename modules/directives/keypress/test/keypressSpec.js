@@ -32,7 +32,17 @@ describe('uiKeypress', function () {
     createElement({'13': 'event=true'}).trigger(createKeyEvent(13));
     expect($scope.event).toBe(true);
   });
-
+  
+  it('should support regex validated key press', function () {
+    createElement({'/[a-z]/': 'event=true'}).trigger(createKeyEvent(97));//press a
+    expect($scope.event).toBe(true);
+  });
+  
+  it('should ignore regex validated key press', function () {
+    createElement({'/[a-z]/': 'event=true'}).trigger(createKeyEvent(49));//press number 1
+    expect($scope.event).toBe(true);
+  });
+  
   it('should support combined key press', function () {
     createElement({'ctrl-shift-13': 'event=true'}).trigger(createKeyEvent(13, false, true, true));
     expect($scope.event).toBe(true);

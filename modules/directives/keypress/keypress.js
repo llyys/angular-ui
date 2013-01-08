@@ -35,9 +35,13 @@ angular.module('ui.directives').factory('keypressHelper', ['$parse', function ke
           expression: expression,
           keys: {}
         };
-        angular.forEach(variation.split('-'), function (value) {
-          combination.keys[value] = true;
-        });
+		var regexp = /^\/(.*)\/$/g.exec(variation); //if key is between / characters then this is evaluated as regex
+        if (regexp) 
+            combination.regex = new RegExp(regexp[1]);        
+        else angular.forEach(variation.split('-'), function(value) {
+                combination.keys[value] = true;
+            });
+        
         combinations.push(combination);
       });
     });
@@ -57,7 +61,12 @@ angular.module('ui.directives').factory('keypressHelper', ['$parse', function ke
 
       // Iterate over prepared combinations
       angular.forEach(combinations, function (combination) {
-
+		if (combination.regex && combination.regex.test(String.fromCharCode(event.keyCode))) {
+			  scope.$apply(function() {
+				  combination.expression(scope, { '$event': event });
+			  });
+              return;
+        }
         var mainKeyPressed = (combination.keys[keysByCode[event.keyCode]] || combination.keys[event.keyCode.toString()]) || false;
 
         var altRequired = combination.keys.alt || false;
@@ -81,9 +90,9 @@ angular.module('ui.directives').factory('keypressHelper', ['$parse', function ke
 }]);
 
 /**
- * Bind one or more handlers to particular keys or their combination
- * @param hash {mixed} keyBindings Can be an object or string where keybinding expression of keys or keys combinations and AngularJS Exspressions are set. Object syntax: "{ keys1: expression1 [, keys2: expression2 [ , ... ]]}". String syntax: ""expression1 on keys1 [ and expression2 on keys2 [ and ... ]]"". Expression is an AngularJS Expression, and key(s) are dash-separated combinations of keys and modifiers (one or many, if any. Order does not matter). Supported modifiers are 'ctrl', 'shift', 'alt' and key can be used either via its keyCode (13 for Return) or name. Named keys are 'backspace', 'tab', 'enter', 'esc', 'space', 'pageup', 'pagedown', 'end', 'home', 'left', 'up', 'right', 'down', 'insert', 'delete'.
- * @example <input ui-keypress="{enter:'x = 1', 'ctrl-shift-space':'foo()', 'shift-13':'bar()'}" /> <input ui-keypress="foo = 2 on ctrl-13 and bar('hello') on shift-esc" />
+ * Bind one or more handlers to particular keys or their combination, now it also support regex validation on evaluating a handler
+ * @param hash {mixed} keyBindings Can be an object or string where keybinding expression of keys or keys combinations and AngularJS Exspressions are set. Object syntax: "{ keys1: expression1 [, keys2: expression2 [ , ... ]]}". String syntax: ""expression1 on keys1 [ and expression2 on keys2 [ and ... ]]"". Expression is an AngularJS Expression, and key(s) are dash-separated combinations of keys and modifiers (one or many, if any. Order does not matter). Supported modifiers are 'ctrl', 'shift', 'alt' and key can be used either via its keyCode (13 for Return) or name. Named keys are 'backspace', 'tab', 'enter', 'esc', 'space', 'pageup', 'pagedown', 'end', 'home', 'left', 'up', 'right', 'down', 'insert', 'delete'. For regex validation named key must be between / character
+ * @example <input ui-keypress="{enter:'x = 1', 'ctrl-shift-space':'foo()', 'shift-13':'bar()', '/[a-z]/':onSmallAlphaChar($event)}" /> <input ui-keypress="foo = 2 on ctrl-13 and bar('hello') on shift-esc" /> 
  **/
 angular.module('ui.directives').directive('uiKeydown', ['keypressHelper', function(keypressHelper){
   return {
